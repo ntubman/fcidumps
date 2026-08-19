@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+import math
+
+
+# (NACTIVE, NALPHA, NBETA)
+data = {
+    'c2':   (26, 4, 4),
+    'c2h2': (36, 5, 5),
+    'ch4':  (33, 4, 4),
+    'h2co': (36, 6, 6),
+    'h2o2': (36, 7, 7),
+    'h2o':  (23, 4, 4),
+    'hcn':  (31, 5, 5),
+    'n2':   (26, 5, 5),
+    'nh3':  (28, 4, 4),
+    'sih4': (33, 4, 4)
+}
+
+
+# macis input file template
+# Options to pay attention to are the PT2 flag and the REFINE_TOL. 
+# The other options just define the ASCI calculation.
+input_template = """\
+[CI]
+REF_DATA_FILE = %s 
+REF_DATA_FORMAT = FCIDUMP
+NALPHA = %d
+NBETA  = %d
+JOB    = CI
+EXPANSION = ASCI
+NINACTIVE = 0
+NACTIVE   = %d
+
+[ASCI]
+NTDETS_MAX   = %d 
+NCDETS_MAX   = %d 
+WFN_OUT_FILE = %s 
+REFINE_ETOL = 1E-8
+PT2=TRUE
+
+[MCSCF]
+CI_MAX_SUB = 500
+
+[PRINT]
+DAVIDSON = TRUE
+CI = TRUE
+ASCI_SEARCH = TRUE
+
+
+"""
+
+
+def get_macis_input_file(molecule, ntdets_max, ncdets_max):
+    """
+    Generates the macis input file from user input.
+
+    The input file and the wavefunction output file are named based on the 
+    molecule name.
+
+    NACTIVE, NALPHA, and NBETA are set in the 'data' dict above.
+    """
+    fcidump_fname = f'../../fcidumps/{molecule}_cc-pvdz.fcidump'
+    wf_fname = f'{molecule}.wf'
+    input_fname = f'{molecule}.in'
+    nactive, nalpha, nbeta = data[molecule]
+    input_str = input_template % (fcidump_fname, nalpha, nbeta, nactive, ntdets_max, ncdets_max, wf_fname)
+    with open(input_fname, 'w') as f:
+        f.write(input_str)
+
+
+if __name__ == '__main__':
+    # user input
+    molecule_list = ['c2', 'c2h2', 'ch4', 'h2co', 'h2o2', 'h2o', 'hcn', 'n2', 'nh3', 'sih4']
+    ntdets_max = 1000000
+    ncdets_fraction = 0.1
+    ncdets_max = math.floor(ncdets_fraction * ntdets_max) 
+
+    # get the input files for all molecules in the list
+    for molecule in molecule_list:
+        get_macis_input_file(molecule, ntdets_max, ncdets_max)
+
+
